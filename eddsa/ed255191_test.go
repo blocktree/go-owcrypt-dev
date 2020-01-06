@@ -16,7 +16,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/blocktree/owcrypt/ed25519/edwards25519"
+	"github.com/blocktree/go-owcrypt-dev/eddsa/edwards25519"
 )
 
 type zeroReader struct{}
