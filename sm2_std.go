@@ -1021,6 +1021,9 @@ func ZA(pub *ecdsa.PublicKey, uid []byte) ([]byte, error) {
 	if n := len(xBuf); n < 32 {
 		xBuf = append(zeroByteSlice[:32-n], xBuf...)
 	}
+	if n := len(yBuf); n < 32 {
+		yBuf = append(zeroByteSlice[:32-n], yBuf...)
+	}
 	za.Write(xBuf)
 	za.Write(yBuf)
 	return za.Sum(nil)[:32], nil
