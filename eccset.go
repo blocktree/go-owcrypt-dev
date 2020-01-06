@@ -3,7 +3,7 @@ package owcrypt
 import "C"
 import (
 	"errors"
-	"github.com/blocktree/owcrypt/eddsa"
+	"github.com/blocktree/go-owcrypt-dev/eddsa"
 )
 
 func GenPubkey(prikey []byte, typeChoose uint32) (pubkey []byte, ret uint16) {

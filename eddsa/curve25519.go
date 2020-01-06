@@ -3,7 +3,7 @@ package eddsa
 import (
 	"crypto/sha512"
 	"crypto/subtle"
-	"github.com/blocktree/owcrypt/eddsa/edwards25519"
+	"github.com/blocktree/go-owcrypt-dev/eddsa/edwards25519"
 )
 
 func CURVE25519_genPub(prikey []byte) ([]byte, error) {

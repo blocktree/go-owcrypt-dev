@@ -2,7 +2,7 @@ package eddsa
 
 import (
 	"errors"
-	"github.com/blocktree/owcrypt/eddsa/edwards25519"
+	"github.com/blocktree/go-owcrypt-dev/eddsa/edwards25519"
 )
 
 func arrayToFixedLength(in []byte) (out [32]byte) {

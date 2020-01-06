@@ -10,7 +10,7 @@ import (
 	"crypto/sha512"
 	"encoding/binary"
 	"errors"
-	"github.com/blocktree/owcrypt/sm3"
+	"github.com/blocktree/go-owcrypt-dev/sm3"
 	"io"
 	"math/big"
 )
