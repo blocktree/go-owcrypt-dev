@@ -89,7 +89,7 @@ func genPublicKey(privateKey []byte, name string) ([]byte, error) {
 	y := priv.PublicKey.Y.Bytes()
 
 	for len(y) < 32 {
-		y = append([]byte{0x00}, x...)
+		y = append([]byte{0x00}, y...)
 	}
 	return append(x, y...), nil
 }
