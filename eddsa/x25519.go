@@ -430,7 +430,7 @@ func X25519_sign(prikey, message []byte) ([]byte, error) {
 	sm := make([]byte, len(message) + 128)
 	random := make([]byte, 64)
 	rand.Read(random)
-	
+
 	signature := sign_modify(sm, message, prikey, ed_pubkey, random)
 
 	signature[63] &= 0x7F

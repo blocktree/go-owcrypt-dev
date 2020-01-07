@@ -9,7 +9,9 @@ import (
 	"crypto/rand"
 	"crypto/sha512"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"github.com/blocktree/go-owcrypt-dev/sm3"
 	"io"
 	"math/big"
@@ -1212,6 +1214,9 @@ func sm2_std_encrypt(pub *ecdsa.PublicKey, data []byte) ([]byte, error) {
 		c := []byte{}
 		curve := pub.Curve
 		k, err := randFieldElement(curve, rand.Reader)
+		fmt.Println("k : ",hex.EncodeToString(k.Bytes()))
+		testrand, _ := hex.DecodeString("0b877f50f9226b6f5e9261f8d7461a3fec9da946005bd415bcaced3fdd05ec72")
+		k.SetBytes(testrand)
 		if err != nil {
 			return nil, err
 		}
