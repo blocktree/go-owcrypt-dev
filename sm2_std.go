@@ -992,16 +992,16 @@ func sm2_stdToBig(X *sm2_stdFieldElement) *big.Int {
 	return r
 }
 
-var zeroByteSlice = []byte{
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-}
+//var zeroByteSlice = []byte{
+//	0, 0, 0, 0,
+//	0, 0, 0, 0,
+//	0, 0, 0, 0,
+//	0, 0, 0, 0,
+//	0, 0, 0, 0,
+//	0, 0, 0, 0,
+//	0, 0, 0, 0,
+//	0, 0, 0, 0,
+//}
 
 func ZA(pub *ecdsa.PublicKey, uid []byte) ([]byte, error) {
 	za := sm3.New()
@@ -1018,14 +1018,13 @@ func ZA(pub *ecdsa.PublicKey, uid []byte) ([]byte, error) {
 	za.Write(sm2_std.Gx.Bytes())
 	za.Write(sm2_std.Gy.Bytes())
 
-	xBuf := pub.X.Bytes()
-	yBuf := pub.Y.Bytes()
-	if n := len(xBuf); n < 32 {
-		xBuf = append(zeroByteSlice[:32-n], xBuf...)
-	}
-	if n := len(yBuf); n < 32 {
-		yBuf = append(zeroByteSlice[:32-n], yBuf...)
-	}
+	xBuf := make([]byte, 32)
+	yBuf := make([]byte, 32)
+	tmp := pub.X.Bytes()
+	copy(xBuf[32-len(tmp):], tmp)
+	tmp = pub.Y.Bytes()
+	copy(yBuf[32-len(tmp):], tmp)
+
 	za.Write(xBuf)
 	za.Write(yBuf)
 	return za.Sum(nil)[:32], nil
@@ -1215,29 +1214,28 @@ func sm2_std_encrypt(pub *ecdsa.PublicKey, data []byte) ([]byte, error) {
 		curve := pub.Curve
 		k, err := randFieldElement(curve, rand.Reader)
 		fmt.Println("k : ",hex.EncodeToString(k.Bytes()))
-		testrand, _ := hex.DecodeString("0b877f50f9226b6f5e9261f8d7461a3fec9da946005bd415bcaced3fdd05ec72")
-		k.SetBytes(testrand)
+		//testrand, _ := hex.DecodeString("0b877f50f9226b6f5e9261f8d7461a3fec9da946005bd415bcaced3fdd05ec72")
+		//k.SetBytes(testrand)
 		if err != nil {
 			return nil, err
 		}
 		x1, y1 := curve.ScalarBaseMult(k.Bytes())
 		x2, y2 := curve.ScalarMult(pub.X, pub.Y, k.Bytes())
-		x1Buf := x1.Bytes()
-		y1Buf := y1.Bytes()
-		x2Buf := x2.Bytes()
-		y2Buf := y2.Bytes()
-		if n := len(x1Buf); n < 32 {
-			x1Buf = append(zeroByteSlice[:32-n], x1Buf...)
-		}
-		if n := len(y1Buf); n < 32 {
-			y1Buf = append(zeroByteSlice[:32-n], y1Buf...)
-		}
-		if n := len(x2Buf); n < 32 {
-			x2Buf = append(zeroByteSlice[:32-n], x2Buf...)
-		}
-		if n := len(y2Buf); n < 32 {
-			y2Buf = append(zeroByteSlice[:32-n], y2Buf...)
-		}
+
+		x1Buf := make([]byte, 32)
+		y1Buf := make([]byte, 32)
+		x2Buf := make([]byte, 32)
+		y2Buf := make([]byte, 32)
+
+		tmp := x1.Bytes()
+		copy(x1Buf[32-len(tmp):], tmp)
+		tmp = y1.Bytes()
+		copy(y1Buf[32-len(tmp):], tmp)
+		tmp = x2.Bytes()
+		copy(x2Buf[32-len(tmp):], tmp)
+		tmp = y2.Bytes()
+		copy(y2Buf[32-len(tmp):], tmp)
+
 		c = append(c, x1Buf...)
 		c = append(c, y1Buf...)
 		tm := []byte{}
@@ -1265,14 +1263,15 @@ func sm2_std_decrypt(priv *ecdsa.PrivateKey, data []byte) ([]byte, error) {
 	x := new(big.Int).SetBytes(data[:32])
 	y := new(big.Int).SetBytes(data[32:64])
 	x2, y2 := curve.ScalarMult(x, y, priv.D.Bytes())
-	x2Buf := x2.Bytes()
-	y2Buf := y2.Bytes()
-	if n := len(x2Buf); n < 32 {
-		x2Buf = append(zeroByteSlice[:32-n], x2Buf...)
-	}
-	if n := len(y2Buf); n < 32 {
-		y2Buf = append(zeroByteSlice[:32-n], y2Buf...)
-	}
+
+	x2Buf := make([]byte, 32)
+	y2Buf := make([]byte, 32)
+
+	tmp := x2.Bytes()
+	copy(x2Buf[32-len(tmp):], tmp)
+	tmp = y2.Bytes()
+	copy(y2Buf[32-len(tmp):], tmp)
+
 	c, ok := kdf(x2Buf, y2Buf, length)
 	if !ok {
 		return nil, errors.New("Decrypt: failed to decrypt")
