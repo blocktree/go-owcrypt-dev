@@ -14,7 +14,6 @@
  */
 package owcrypt
 
-import "C"
 import (
 	"errors"
 	"github.com/blocktree/go-owcrypt-dev/eddsa"
