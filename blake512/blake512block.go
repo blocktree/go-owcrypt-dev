@@ -1,14 +1,17 @@
-// Written in 2011-2012 by Dmitry Chestnykh.
-//
-// To the extent possible under law, the author have dedicated all copyright
-// and related and neighboring rights to this software to the public domain
-// worldwide. This software is distributed without any warranty.
-// http://creativecommons.org/publicdomain/zero/1.0/
-
-// BLAKE-512 block step.
-// In its own file so that a faster assembly or C version
-// can be substituted easily.
-
+/*
+ * Copyright 2020 The openwallet Authors
+ * This file is part of the openwallet library.
+ *
+ * The openwallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The openwallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
 package blake512
 
 const (
@@ -48,8 +51,8 @@ func block(d *digest, p []uint8) {
 		if !d.nullt {
 			v12 ^= d.t
 			v13 ^= d.t
-			v14 ^= 0 // TODO ideally d.t must be uint128.
-			v15 ^= 0 //      currently 2^64 bits supported.
+			v14 ^= 0
+			v15 ^= 0
 		}
 		var m [16]uint64
 
@@ -61,7 +64,6 @@ func block(d *digest, p []uint8) {
 			j += 8
 		}
 
-		// Round 1.
 		v0 += m[0] ^ cst1
 		v0 += v4
 		v12 ^= v0
@@ -175,7 +177,6 @@ func block(d *digest, p []uint8) {
 		v5 ^= v10
 		v5 = v5<<(64-11) | v5>>11
 
-		// Round 2.
 		v0 += m[14] ^ cst10
 		v0 += v4
 		v12 ^= v0
@@ -289,7 +290,6 @@ func block(d *digest, p []uint8) {
 		v5 ^= v10
 		v5 = v5<<(64-11) | v5>>11
 
-		// Round 3.
 		v0 += m[11] ^ cst8
 		v0 += v4
 		v12 ^= v0
@@ -403,7 +403,6 @@ func block(d *digest, p []uint8) {
 		v5 ^= v10
 		v5 = v5<<(64-11) | v5>>11
 
-		// Round 4.
 		v0 += m[7] ^ cst9
 		v0 += v4
 		v12 ^= v0
@@ -517,7 +516,6 @@ func block(d *digest, p []uint8) {
 		v5 ^= v10
 		v5 = v5<<(64-11) | v5>>11
 
-		// Round 5.
 		v0 += m[9] ^ cst0
 		v0 += v4
 		v12 ^= v0
@@ -631,7 +629,6 @@ func block(d *digest, p []uint8) {
 		v5 ^= v10
 		v5 = v5<<(64-11) | v5>>11
 
-		// Round 6.
 		v0 += m[2] ^ cst12
 		v0 += v4
 		v12 ^= v0
@@ -745,7 +742,6 @@ func block(d *digest, p []uint8) {
 		v5 ^= v10
 		v5 = v5<<(64-11) | v5>>11
 
-		// Round 7.
 		v0 += m[12] ^ cst5
 		v0 += v4
 		v12 ^= v0
@@ -859,7 +855,6 @@ func block(d *digest, p []uint8) {
 		v5 ^= v10
 		v5 = v5<<(64-11) | v5>>11
 
-		// Round 8.
 		v0 += m[13] ^ cst11
 		v0 += v4
 		v12 ^= v0
@@ -973,7 +968,6 @@ func block(d *digest, p []uint8) {
 		v5 ^= v10
 		v5 = v5<<(64-11) | v5>>11
 
-		// Round 9.
 		v0 += m[6] ^ cst15
 		v0 += v4
 		v12 ^= v0
@@ -1087,7 +1081,6 @@ func block(d *digest, p []uint8) {
 		v5 ^= v10
 		v5 = v5<<(64-11) | v5>>11
 
-		// Round 10.
 		v0 += m[10] ^ cst2
 		v0 += v4
 		v12 ^= v0
@@ -1201,7 +1194,6 @@ func block(d *digest, p []uint8) {
 		v5 ^= v10
 		v5 = v5<<(64-11) | v5>>11
 
-		// Round 11.
 		v0 += m[0] ^ cst1
 		v0 += v4
 		v12 ^= v0
@@ -1543,7 +1535,6 @@ func block(d *digest, p []uint8) {
 		v5 ^= v10
 		v5 = v5<<(64-11) | v5>>11
 
-		// Round 14.
 		v0 += m[7] ^ cst9
 		v0 += v4
 		v12 ^= v0

@@ -1,3 +1,17 @@
+/*
+ * Copyright 2020 The openwallet Authors
+ * This file is part of the openwallet library.
+ *
+ * The openwallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The openwallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
 package owcrypt
 
 import (
@@ -9,9 +23,7 @@ import (
 	"crypto/rand"
 	"crypto/sha512"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
-	"fmt"
 	"github.com/blocktree/go-owcrypt-dev/sm3"
 	"io"
 	"math/big"
@@ -54,20 +66,19 @@ func (curve sm2_stdCurve) Params() *elliptic.CurveParams {
 	return sm2_std.CurveParams
 }
 
-
 func (curve sm2_stdCurve) IsOnCurve(X, Y *big.Int) bool {
 	var a, x, y, y2, x3 sm2_stdFieldElement
 
 	sm2_stdFromBig(&x, X)
 	sm2_stdFromBig(&y, Y)
 
-	sm2_stdSquare(&x3, &x)       // x3 = x ^ 2
-	sm2_stdMul(&x3, &x3, &x)     // x3 = x ^ 2 * x
-	sm2_stdMul(&a, &curve.a, &x) // a = a * x
+	sm2_stdSquare(&x3, &x)
+	sm2_stdMul(&x3, &x3, &x)
+	sm2_stdMul(&a, &curve.a, &x)
 	sm2_stdAdd(&x3, &x3, &a)
 	sm2_stdAdd(&x3, &x3, &curve.b)
 
-	sm2_stdSquare(&y2, &y) // y2 = y ^ 2
+	sm2_stdSquare(&y2, &y)
 	return sm2_stdToBig(&x3).Cmp(sm2_stdToBig(&y2)) == 0
 }
 
@@ -236,8 +247,6 @@ func sm2_stdCopyConditional(out, in *sm2_stdFieldElement, mask uint32) {
 	}
 }
 
-// sm2_stdSelectAffinePoint sets {out_x,out_y} to the index'th entry of table.
-// On entry: index < 16, table[0] must be zero.
 func sm2_stdSelectAffinePoint(xOut, yOut *sm2_stdFieldElement, table []uint32, index uint32) {
 	for i := range xOut {
 		xOut[i] = 0
@@ -263,9 +272,6 @@ func sm2_stdSelectAffinePoint(xOut, yOut *sm2_stdFieldElement, table []uint32, i
 	}
 }
 
-// sm2_stdSelectJacobianPoint sets {out_x,out_y,out_z} to the index'th entry of
-// table.
-// On entry: index < 16, table[0] must be zero.
 func sm2_stdSelectJacobianPoint(xOut, yOut, zOut *sm2_stdFieldElement, table *[16][3]sm2_stdFieldElement, index uint32) {
 	for i := range xOut {
 		xOut[i] = 0
@@ -277,8 +283,6 @@ func sm2_stdSelectJacobianPoint(xOut, yOut, zOut *sm2_stdFieldElement, table *[1
 		zOut[i] = 0
 	}
 
-	// The implicit value at index 0 is all zero. We don't need to perform that
-	// iteration of the loop because we already set out_* to zero.
 	for i := uint32(1); i < 16; i++ {
 		mask := i ^ index
 		mask |= mask >> 2
@@ -297,14 +301,10 @@ func sm2_stdSelectJacobianPoint(xOut, yOut, zOut *sm2_stdFieldElement, table *[1
 	}
 }
 
-// sm2_stdGetBit returns the bit'th bit of scalar.
 func sm2_stdGetBit(scalar *[32]uint8, bit uint) uint32 {
 	return uint32(((scalar[bit>>3]) >> (bit & 7)) & 1)
 }
 
-// sm2_stdScalarBaseMult sets {xOut,yOut,zOut} = scalar*G where scalar is a
-// little-endian number. Note that the value of scalar must be less than the
-// order of the group.
 func sm2_stdScalarBaseMult(xOut, yOut, zOut *sm2_stdFieldElement, scalar *[32]uint8) {
 	nIsInfinityMask := ^uint32(0)
 	var px, py, tx, ty, tz sm2_stdFieldElement
@@ -320,8 +320,6 @@ func sm2_stdScalarBaseMult(xOut, yOut, zOut *sm2_stdFieldElement, scalar *[32]ui
 		zOut[i] = 0
 	}
 
-	// The loop adds bits at positions 0, 64, 128 and 192, followed by
-	// positions 32,96,160 and 224 and does this 32 times.
 	for i := uint(0); i < 32; i++ {
 		if i != 0 {
 			sm2_stdPointDouble(xOut, yOut, zOut, xOut, yOut, zOut)
@@ -337,26 +335,16 @@ func sm2_stdScalarBaseMult(xOut, yOut, zOut *sm2_stdFieldElement, scalar *[32]ui
 			sm2_stdSelectAffinePoint(&px, &py, sm2_stdPrecomputed[tableOffset:], index)
 			tableOffset += 30 * 9
 
-			// Since scalar is less than the order of the group, we know that
-			// {xOut,yOut,zOut} != {px,py,1}, unless both are zero, which we handle
-			// below.
 			sm2_stdPointAddMixed(&tx, &ty, &tz, xOut, yOut, zOut, &px, &py)
-			// The result of pointAddMixed is incorrect if {xOut,yOut,zOut} is zero
-			// (a.k.a.  the point at infinity). We handle that situation by
-			// copying the point from the table.
 			sm2_stdCopyConditional(xOut, &px, nIsInfinityMask)
 			sm2_stdCopyConditional(yOut, &py, nIsInfinityMask)
 			sm2_stdCopyConditional(zOut, &sm2_stdFactor[1], nIsInfinityMask)
 
-			// Equally, the result is also wrong if the point from the table is
-			// zero, which happens when the index is zero. We handle that by
-			// only copying from {tx,ty,tz} to {xOut,yOut,zOut} if index != 0.
 			pIsNoninfiniteMask = nonZeroToAllOnes(index)
 			mask = pIsNoninfiniteMask & ^nIsInfinityMask
 			sm2_stdCopyConditional(xOut, &tx, mask)
 			sm2_stdCopyConditional(yOut, &ty, mask)
 			sm2_stdCopyConditional(zOut, &tz, mask)
-			// If p was not zero, then n is now non-zero.
 			nIsInfinityMask &^= pIsNoninfiniteMask
 		}
 	}
@@ -367,7 +355,6 @@ func sm2_stdScalarMult(xOut, yOut, zOut, x, y *sm2_stdFieldElement, scalar *[32]
 	var px, py, pz, tx, ty, tz sm2_stdFieldElement
 	var nIsInfinityMask, index, pIsNoninfiniteMask, mask uint32
 
-	// We precompute 0,1,2,... times {x,y}.
 	precomp[1][0] = *x
 	precomp[1][1] = *y
 	precomp[1][2] = sm2_stdFactor[1]
@@ -388,7 +375,6 @@ func sm2_stdScalarMult(xOut, yOut, zOut, x, y *sm2_stdFieldElement, scalar *[32]
 	}
 	nIsInfinityMask = ^uint32(0)
 
-	// We add in a window of four bits each iteration and do this 64 times.
 	for i := 0; i < 64; i++ {
 		if i != 0 {
 			sm2_stdPointDouble(xOut, yOut, zOut, xOut, yOut, zOut)
@@ -403,8 +389,7 @@ func sm2_stdScalarMult(xOut, yOut, zOut, x, y *sm2_stdFieldElement, scalar *[32]
 		} else {
 			index >>= 4
 		}
-
-		// See the comments in scalarBaseMult about handling infinities.
+		
 		sm2_stdSelectJacobianPoint(&px, &py, &pz, &precomp, index)
 		sm2_stdPointAdd(xOut, yOut, zOut, &px, &py, &pz, &tx, &ty, &tz)
 		sm2_stdCopyConditional(xOut, &px, nIsInfinityMask)
@@ -848,7 +833,7 @@ func sm2_stdReduceDegree(a *sm2_stdFieldElement, b *sm2_stdLargeFieldElement) {
 					tmp[i+9] += (x >> 1) & xMask
 				}
 			} else {
-				tmp[i+7] -= set7 // 借位
+				tmp[i+7] -= set7
 				tmp[i+7] -= (x << 24) & bottom28Bits
 				tmp[i+8] += (x << 28) & bottom29Bits
 				if tmp[i+8] < 0x20000000 {
@@ -886,23 +871,23 @@ func sm2_stdReduceDegree(a *sm2_stdFieldElement, b *sm2_stdLargeFieldElement) {
 			}
 			if tmp[i+5] < 0x10000000 {
 				tmp[i+5] += 0x10000000 & xMask
-				tmp[i+5] -= set5 // 借位
+				tmp[i+5] -= set5
 				tmp[i+5] -= x >> 18
 				if tmp[i+6] < 0x20000000 {
 					tmp[i+6] += 0x20000000 & xMask
-					tmp[i+6] -= 1 // 借位
+					tmp[i+6] -= 1
 					if tmp[i+7] < 0x10000000 {
 						set8 = 1
 						tmp[i+7] += 0x10000000 & xMask
-						tmp[i+7] -= 1 // 借位
+						tmp[i+7] -= 1
 					} else {
-						tmp[i+7] -= 1 // 借位
+						tmp[i+7] -= 1
 					}
 				} else {
-					tmp[i+6] -= 1 // 借位
+					tmp[i+6] -= 1
 				}
 			} else {
-				tmp[i+5] -= set5 // 借位
+				tmp[i+5] -= set5
 				tmp[i+5] -= x >> 18
 			}
 			if tmp[i+8] < 0x20000000 {
@@ -916,11 +901,11 @@ func sm2_stdReduceDegree(a *sm2_stdFieldElement, b *sm2_stdLargeFieldElement) {
 			}
 			if tmp[i+9] < 0x10000000 {
 				tmp[i+9] += 0x10000000 & xMask
-				tmp[i+9] -= set9 // 借位
+				tmp[i+9] -= set9
 				tmp[i+9] -= x >> 4
 				tmp[i+10] += (x - 1) & xMask
 			} else {
-				tmp[i+9] -= set9 // 借位
+				tmp[i+9] -= set9
 				tmp[i+9] -= x >> 4
 				tmp[i+10] += x & xMask
 			}
@@ -991,17 +976,6 @@ func sm2_stdToBig(X *sm2_stdFieldElement) *big.Int {
 	r.Mod(r, sm2_std.P)
 	return r
 }
-
-//var zeroByteSlice = []byte{
-//	0, 0, 0, 0,
-//	0, 0, 0, 0,
-//	0, 0, 0, 0,
-//	0, 0, 0, 0,
-//	0, 0, 0, 0,
-//	0, 0, 0, 0,
-//	0, 0, 0, 0,
-//	0, 0, 0, 0,
-//}
 
 func ZA(pub *ecdsa.PublicKey, uid []byte) ([]byte, error) {
 	za := sm3.New()
@@ -1213,9 +1187,6 @@ func sm2_std_encrypt(pub *ecdsa.PublicKey, data []byte) ([]byte, error) {
 		c := []byte{}
 		curve := pub.Curve
 		k, err := randFieldElement(curve, rand.Reader)
-		fmt.Println("k : ",hex.EncodeToString(k.Bytes()))
-		//testrand, _ := hex.DecodeString("0b877f50f9226b6f5e9261f8d7461a3fec9da946005bd415bcaced3fdd05ec72")
-		//k.SetBytes(testrand)
 		if err != nil {
 			return nil, err
 		}
@@ -1289,7 +1260,6 @@ func sm2_std_decrypt(priv *ecdsa.PrivateKey, data []byte) ([]byte, error) {
 	}
 	return c, nil
 }
-
 
 func ka_kdf(point *ecdsa.PublicKey, Zinitiator, Zresponder []byte, keyLengthbit uint16) (key []byte) {
 
@@ -1640,9 +1610,9 @@ func sm2_std_decompress(a []byte) []byte {
 	x := new(big.Int).SetBytes(a[1:])
 	curve := sm2_std
 	sm2_stdFromBig(&xx, x)
-	sm2_stdSquare(&xx3, &xx)       // x3 = x ^ 2
-	sm2_stdMul(&xx3, &xx3, &xx)    // x3 = x ^ 2 * x
-	sm2_stdMul(&aa, &curve.a, &xx) // a = a * x
+	sm2_stdSquare(&xx3, &xx)
+	sm2_stdMul(&xx3, &xx3, &xx)
+	sm2_stdMul(&aa, &curve.a, &xx)
 	sm2_stdAdd(&xx3, &xx3, &aa)
 	sm2_stdAdd(&xx3, &xx3, &curve.b)
 

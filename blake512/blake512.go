@@ -1,37 +1,36 @@
-// Written in 2011-2012 by Dmitry Chestnykh.
-//
-// To the extent possible under law, the author have dedicated all copyright
-// and related and neighboring rights to this software to the public domain
-// worldwide. This software is distributed without any warranty.
-// http://creativecommons.org/publicdomain/zero/1.0/
-
-// Package blake512 implements BLAKE-512 and BLAKE-384 hash functions (SHA-3
-// candidate).
+/*
+ * Copyright 2020 The openwallet Authors
+ * This file is part of the openwallet library.
+ *
+ * The openwallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The openwallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
 package blake512
 
 import "hash"
 
-// The block size of the hash algorithm in bytes.
 const BlockSize = 128
-
-// The size of BLAKE-512 hash in bytes.
 const Size = 64
-
-// The size of BLAKE-384 hash in bytes.
 const Size384 = 48
 
 type digest struct {
-	hashSize int             // hash output size in bits (384 or 512)
-	h        [8]uint64       // current chain value
-	s        [4]uint64       // salt (zero by default)
-	t        uint64          // message bits counter
-	nullt    bool            // special case for finalization: skip counter
-	x        [BlockSize]byte // buffer for data not yet compressed
-	nx       int             // number of bytes in buffer
+	hashSize int
+	h        [8]uint64
+	s        [4]uint64
+	t        uint64
+	nullt    bool
+	x        [BlockSize]byte
+	nx       int
 }
 
 var (
-	// Initialization values.
 	iv512 = [8]uint64{
 		0x6A09E667F3BCC908, 0xBB67AE8584CAA73B,
 		0x3C6EF372FE94F82B, 0xA54FF53A5F1D36F1,
@@ -45,7 +44,6 @@ var (
 		0xDB0C2E0D64F98FA7, 0x47B5481DBEFA4FA4}
 )
 
-// Reset resets the state of digest. It leaves salt intact.
 func (d *digest) Reset() {
 	if d.hashSize == 384 {
 		d.h = iv384
@@ -86,15 +84,13 @@ func (d *digest) Write(p []byte) (nn int, err error) {
 	return
 }
 
-// Sum returns the calculated checksum.
 func (d0 *digest) Sum(in []byte) []byte {
-	// Make a copy of d0 so that caller can keep writing and summing.
 	d := *d0
 
 	nx := uint64(d.nx)
 	l := d.t + nx<<3
 	len := make([]byte, 16)
-	// len[0 .. 7] = 0, because our counter has only 64 bits.
+
 	len[8] = byte(l >> 56)
 	len[9] = byte(l >> 48)
 	len[10] = byte(l >> 40)
@@ -105,7 +101,6 @@ func (d0 *digest) Sum(in []byte) []byte {
 	len[15] = byte(l)
 
 	if nx == 111 {
-		// One padding byte.
 		d.t -= 8
 		if d.hashSize == 384 {
 			d.Write([]byte{0x80})
@@ -115,14 +110,12 @@ func (d0 *digest) Sum(in []byte) []byte {
 	} else {
 		pad := [129]byte{0x80}
 		if nx < 111 {
-			// Enough space to fill the block.
 			if nx == 0 {
 				d.nullt = true
 			}
 			d.t -= 888 - nx<<3
 			d.Write(pad[0 : 111-nx])
 		} else {
-			// Need 2 compressions.
 			d.t -= 1024 - nx<<3
 			d.Write(pad[0 : 128-nx])
 			d.t -= 888
@@ -168,7 +161,6 @@ func (d *digest) setSalt(s []byte) {
 	}
 }
 
-// New returns a new hash.Hash computing the BLAKE-512 checksum.
 func New() hash.Hash {
 	return &digest{
 		hashSize: 512,
@@ -176,7 +168,6 @@ func New() hash.Hash {
 	}
 }
 
-// NewSalt is like New but initializes salt with the given 32-byte slice.
 func NewSalt(salt []byte) hash.Hash {
 	d := &digest{
 		hashSize: 512,
@@ -186,7 +177,6 @@ func NewSalt(salt []byte) hash.Hash {
 	return d
 }
 
-// New384 returns a new hash.Hash computing the BLAKE-384 checksum.
 func New384() hash.Hash {
 	return &digest{
 		hashSize: 384,
@@ -194,7 +184,6 @@ func New384() hash.Hash {
 	}
 }
 
-// New384Salt is like New384 but initializes salt with the given 32-byte slice.
 func New384Salt(salt []byte) hash.Hash {
 	d := &digest{
 		hashSize: 384,

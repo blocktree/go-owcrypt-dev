@@ -1,3 +1,17 @@
+/*
+ * Copyright 2020 The openwallet Authors
+ * This file is part of the openwallet library.
+ *
+ * The openwallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The openwallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
 package eddsa
 
 import (
@@ -526,7 +540,7 @@ func geFromBytesNegateVartime(h *edwards25519.ExtendedGroupElement, s *[32]byte)
 
 	edwards25519.FeSquare(&vxx, &h.X)
 	edwards25519.FeMul(&vxx, &vxx, &v)
-	edwards25519.FeSub(&check, &vxx, &v)
+	edwards25519.FeSub(&check, &vxx, &u)
 	if edwards25519.FeIsNonZero(&check) != 0 {
 		edwards25519.FeAdd(&check, &vxx, &u)
 		if edwards25519.FeIsNonZero(&check) != 0 {
@@ -535,7 +549,7 @@ func geFromBytesNegateVartime(h *edwards25519.ExtendedGroupElement, s *[32]byte)
 		edwards25519.FeMul(&h.X, &h.X, &edwards25519.SqrtM1)
 	}
 
-	if edwards25519.FeIsNegative(&h.X) != (s[31] >> 7) {
+	if edwards25519.FeIsNegative(&h.X) == (s[31] >> 7) {
 		edwards25519.FeNeg(&h.X, &h.X)
 	}
 

@@ -1,37 +1,36 @@
-// Written in 2011-2012 by Dmitry Chestnykh.
-//
-// To the extent possible under law, the author have dedicated all copyright
-// and related and neighboring rights to this software to the public domain
-// worldwide. This software is distributed without any warranty.
-// http://creativecommons.org/publicdomain/zero/1.0/
-
-// Package blake256 implements BLAKE-256 and BLAKE-224 hash functions (SHA-3
-// candidate).
+/*
+ * Copyright 2020 The openwallet Authors
+ * This file is part of the openwallet library.
+ *
+ * The openwallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The openwallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
 package blake256
 
 import "hash"
 
-// The block size of the hash algorithm in bytes.
 const BlockSize = 64
-
-// The size of BLAKE-256 hash in bytes.
 const Size = 32
-
-// The size of BLAKE-224 hash in bytes.
 const Size224 = 28
 
 type digest struct {
-	hashSize int             // hash output size in bits (224 or 256)
-	h        [8]uint32       // current chain value
-	s        [4]uint32       // salt (zero by default)
-	t        uint64          // message bits counter
-	nullt    bool            // special case for finalization: skip counter
-	x        [BlockSize]byte // buffer for data not yet compressed
-	nx       int             // number of bytes in buffer
+	hashSize int
+	h        [8]uint32
+	s        [4]uint32
+	t        uint64
+	nullt    bool
+	x        [BlockSize]byte
+	nx       int
 }
 
 var (
-	// Initialization values.
 	iv256 = [8]uint32{
 		0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A,
 		0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19}
@@ -43,7 +42,6 @@ var (
 	pad = [64]byte{0x80}
 )
 
-// Reset resets the state of digest. It leaves salt intact.
 func (d *digest) Reset() {
 	if d.hashSize == 224 {
 		d.h = iv224
@@ -84,9 +82,7 @@ func (d *digest) Write(p []byte) (nn int, err error) {
 	return
 }
 
-// Sum returns the calculated checksum.
 func (d0 *digest) Sum(in []byte) []byte {
-	// Make a copy of d0 so that caller can keep writing and summing.
 	d := *d0
 
 	nx := uint64(d.nx)
@@ -102,7 +98,6 @@ func (d0 *digest) Sum(in []byte) []byte {
 	len[7] = byte(l)
 
 	if nx == 55 {
-		// One padding byte.
 		d.t -= 8
 		if d.hashSize == 224 {
 			d.Write([]byte{0x80})
@@ -111,14 +106,12 @@ func (d0 *digest) Sum(in []byte) []byte {
 		}
 	} else {
 		if nx < 55 {
-			// Enough space to fill the block.
 			if nx == 0 {
 				d.nullt = true
 			}
 			d.t -= 440 - nx<<3
 			d.Write(pad[0 : 55-nx])
 		} else {
-			// Need 2 compressions.
 			d.t -= 512 - nx<<3
 			d.Write(pad[0 : 64-nx])
 			d.t -= 440
@@ -157,7 +150,6 @@ func (d *digest) setSalt(s []byte) {
 	d.s[3] = uint32(s[12])<<24 | uint32(s[13])<<16 | uint32(s[14])<<8 | uint32(s[15])
 }
 
-// New returns a new hash.Hash computing the BLAKE-256 checksum.
 func New() hash.Hash {
 	return &digest{
 		hashSize: 256,
@@ -165,7 +157,6 @@ func New() hash.Hash {
 	}
 }
 
-// NewSalt is like New but initializes salt with the given 16-byte slice.
 func NewSalt(salt []byte) hash.Hash {
 	d := &digest{
 		hashSize: 256,
@@ -175,7 +166,6 @@ func NewSalt(salt []byte) hash.Hash {
 	return d
 }
 
-// New224 returns a new hash.Hash computing the BLAKE-224 checksum.
 func New224() hash.Hash {
 	return &digest{
 		hashSize: 224,
@@ -183,7 +173,6 @@ func New224() hash.Hash {
 	}
 }
 
-// New224Salt is like New224 but initializes salt with the given 16-byte slice.
 func New224Salt(salt []byte) hash.Hash {
 	d := &digest{
 		hashSize: 224,

@@ -1,24 +1,27 @@
-// Written in 2012 by Dmitry Chestnykh.
-//
-// To the extent possible under law, the author have dedicated all copyright
-// and related and neighboring rights to this software to the public domain
-// worldwide. This software is distributed without any warranty.
-// http://creativecommons.org/publicdomain/zero/1.0/
-
-// BLAKE2s compression of message blocks.
-
+/*
+ * Copyright 2020 The openwallet Authors
+ * This file is part of the openwallet library.
+ *
+ * The openwallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The openwallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
 package blake2s
 
 func blocks(d *digest, p []uint8) {
 	h0, h1, h2, h3, h4, h5, h6, h7 := d.h[0], d.h[1], d.h[2], d.h[3], d.h[4], d.h[5], d.h[6], d.h[7]
 
 	for len(p) >= BlockSize {
-		// Increment counter.
 		d.t[0] += BlockSize
 		if d.t[0] < BlockSize {
 			d.t[1]++
 		}
-		// Initialize compression function.
 		v0, v1, v2, v3, v4, v5, v6, v7 := h0, h1, h2, h3, h4, h5, h6, h7
 		v8 := iv[0]
 		v9 := iv[1]
@@ -37,7 +40,6 @@ func blocks(d *digest, p []uint8) {
 			j += 4
 		}
 
-		// Round 1.
 		v0 += m[0]
 		v0 += v4
 		v12 ^= v0
@@ -151,7 +153,6 @@ func blocks(d *digest, p []uint8) {
 		v5 ^= v10
 		v5 = v5<<(32-7) | v5>>7
 
-		// Round 2.
 		v0 += m[14]
 		v0 += v4
 		v12 ^= v0

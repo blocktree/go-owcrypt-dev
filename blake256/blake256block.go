@@ -1,14 +1,17 @@
-// Written in 2011-2012 by Dmitry Chestnykh.
-//
-// To the extent possible under law, the author have dedicated all copyright
-// and related and neighboring rights to this software to the public domain
-// worldwide. This software is distributed without any warranty.
-// http://creativecommons.org/publicdomain/zero/1.0/
-
-// BLAKE-256 block step.
-// In its own file so that a faster assembly or C version
-// can be substituted easily.
-
+/*
+ * Copyright 2020 The openwallet Authors
+ * This file is part of the openwallet library.
+ *
+ * The openwallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The openwallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
 package blake256
 
 const (
@@ -70,7 +73,6 @@ func block(d *digest, p []uint8) {
 		m[14] = uint32(p[56])<<24 | uint32(p[57])<<16 | uint32(p[58])<<8 | uint32(p[59])
 		m[15] = uint32(p[60])<<24 | uint32(p[61])<<16 | uint32(p[62])<<8 | uint32(p[63])
 
-		// Round 1.
 		v0 += m[0] ^ cst1
 		v0 += v4
 		v12 ^= v0
@@ -184,7 +186,6 @@ func block(d *digest, p []uint8) {
 		v5 ^= v10
 		v5 = v5<<(32-7) | v5>>7
 
-		// Round 2.
 		v0 += m[14] ^ cst10
 		v0 += v4
 		v12 ^= v0
@@ -1438,7 +1439,6 @@ func block(d *digest, p []uint8) {
 		v5 ^= v10
 		v5 = v5<<(32-7) | v5>>7
 
-		// Round 13.
 		v0 += m[11] ^ cst8
 		v0 += v4
 		v12 ^= v0

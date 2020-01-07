@@ -1,3 +1,17 @@
+/*
+ * Copyright 2020 The openwallet Authors
+ * This file is part of the openwallet library.
+ *
+ * The openwallet library is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The openwallet library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ */
 package owcrypt
 
 import "C"
@@ -96,7 +110,7 @@ func Verify(pubkey []byte, ID []byte, message []byte, signature []byte, typeChoo
 		pass = eddsa.ED25519_verify(pubkey, message, signature)
 		break
 	case ECC_CURVE_X25519:
-		pass = eddsa.X25519_verify( pubkey, message, message)
+		pass = eddsa.X25519_verify( pubkey, message, signature)
 		break
 	case ECC_CURVE_SECP256K1:
 		pass = verify(pubkey, nil, message, signature, "secp256k1")
