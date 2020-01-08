@@ -17,9 +17,7 @@ package owcrypt
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"encoding/hex"
 	"errors"
-	"fmt"
 	"math/big"
 )
 
@@ -50,16 +48,16 @@ func secp256r1_decompress(in []byte) ([]byte, error) {
 
 	c := secp256r1
 
-	// y^2 = x^3 + b
-	// y   = sqrt(x^3 + b)
-	var y, x3b big.Int
+	var y, x3b, xa big.Int
 	x3b.Mul(x, x)
 	x3b.Mul(&x3b, x)
+	xa.SetBytes([]byte{0xFF,0xFF,0xFF,0xFF,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFC})
+	xa.Mul(&xa, x)
 	x3b.Add(&x3b, c.B)
+	x3b.Add(&x3b, &xa)
 	x3b.Mod(&x3b, c.P)
 	y.ModSqrt(&x3b, c.P)
 
-	fmt.Println(hex.EncodeToString(y.Bytes()))
 	if y.Bit(0) != ybit {
 		y.Sub(c.P, &y)
 	}
@@ -93,7 +91,7 @@ func secp256r1_recover_public(sig, msg []byte) ([]byte, error) {
 
 	curve := secp256r1
 
-	r_inv := new(big.Int).ModInverse(new(big.Int).SetBytes(sig), curve.N)
+	r_inv := new(big.Int).ModInverse(new(big.Int).SetBytes(sig[:32]), curve.N)
 	G.Curve = curve
 	G.X = curve.Gx
 	G.Y = curve.Gy
@@ -128,11 +126,9 @@ func secp256r1_recover_public(sig, msg []byte) ([]byte, error) {
 		point1 := new(ecdsa.PublicKey)
 		point1.Curve = curve
 		point1.X, point1.Y = curve.ScalarMult(R.X, R.Y, s.Bytes())
-
 		point2 := new(ecdsa.PublicKey)
 		point2.Curve = curve
 		point2.X, point2.Y = curve.ScalarBaseMult(hash)
-
 		point2.Y = point2.Y.Sub(curve.P, point2.Y)
 
 		point1.X, point1.Y = curve.Add(point1.X, point1.Y, point2.X, point2.Y)

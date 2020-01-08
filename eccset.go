@@ -390,7 +390,11 @@ func PointDecompress(point []byte, typeChoose uint32) []byte {
 		return ret
 		break
 	case ECC_CURVE_SM2_STANDARD:
-		return sm2_std_decompress(point)
+		ret, err := sm2_std_decompress(point)
+		if err != nil {
+			return nil
+		}
+		return ret
 		break
 	default:
 		return nil

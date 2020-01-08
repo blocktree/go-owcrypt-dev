@@ -1604,32 +1604,46 @@ func getLastBit(a *big.Int) uint {
 	return a.Bit(0)
 }
 
-func sm2_std_decompress(a []byte) []byte {
-	var aa, xx, xx3 sm2_stdFieldElement
+func sm2_std_decompress(in []byte) ([]byte, error){
+	if in == nil || len(in) != 33 || (in[0] != 0x02 && in[0] != 0x03){
+		return nil, errors.New("invalid input")
+	}
 
-	x := new(big.Int).SetBytes(a[1:])
-	curve := sm2_std
-	sm2_stdFromBig(&xx, x)
-	sm2_stdSquare(&xx3, &xx)
-	sm2_stdMul(&xx3, &xx3, &xx)
-	sm2_stdMul(&aa, &curve.a, &xx)
-	sm2_stdAdd(&xx3, &xx3, &aa)
-	sm2_stdAdd(&xx3, &xx3, &curve.b)
+	var ybit uint
+	x := new(big.Int).SetBytes(in[1:])
+	if in[0] == 0x02 {
+		ybit = 0
+	} else {
+		ybit = 1
+	}
 
-	y2 := sm2_stdToBig(&xx3)
-	y := new(big.Int).ModSqrt(y2, sm2_std.P)
-	if getLastBit(y) != uint(a[0]) {
-		y.Sub(sm2_std.P, y)
+	c := sm2_std
+
+	var y, x3b, xa big.Int
+	x3b.Mul(x, x)
+	x3b.Mul(&x3b, x)
+	xa.SetBytes([]byte{0xFF,0xFF,0xFF,0xFE,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x00,0x00,0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFC})
+	xa.Mul(&xa, x)
+	x3b.Add(&x3b, c.B)
+	x3b.Add(&x3b, &xa)
+	x3b.Mod(&x3b, c.P)
+	y.ModSqrt(&x3b, c.P)
+
+	if y.Bit(0) != ybit {
+		y.Sub(c.P, &y)
+	}
+	if y.Bit(0) != ybit {
+		return nil, errors.New("incorrectly encoded X and Y bit")
 	}
 
 	ret := make([]byte, 65)
 	ret[0] = 0x04
-	dx := x.Bytes()
+	copy(ret[1:33], in[1:])
 	dy := y.Bytes()
-
-	copy(ret[1+32-len(dx):33], dx)
 	copy(ret[33+32-len(dy):], dy)
-	return ret
+
+	return ret, nil
+
 }
 
 
@@ -1650,7 +1664,7 @@ func sm2_std_recover_public(sig, msg []byte) ([]byte, error) {
 
 	curve := sm2_std
 
-	r_inv := new(big.Int).ModInverse(new(big.Int).SetBytes(sig), curve.N)
+	r_inv := new(big.Int).ModInverse(new(big.Int).SetBytes(sig[:32]), curve.N)
 	G.Curve = curve
 	G.X = curve.Gx
 	G.Y = curve.Gy

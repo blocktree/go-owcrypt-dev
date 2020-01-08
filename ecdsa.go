@@ -347,7 +347,7 @@ func MulBaseG_Add(pointin, scalar []byte, name string) (point []byte, isinfinity
 	y := priv.PublicKey.Y.Bytes()
 
 	for len(y) < 32 {
-		y = append([]byte{0x00}, x...)
+		y = append([]byte{0x00}, y...)
 	}
 	return append(x, y...), false
 }

@@ -17,9 +17,7 @@ package owcrypt
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"encoding/hex"
 	"errors"
-	"fmt"
 	"math/big"
 )
 
@@ -298,7 +296,6 @@ func secp256k1_recover_public(sig, msg []byte) ([]byte, error) {
 
 	r_inv := new(big.Int).ModInverse(new(big.Int).SetBytes(sig[:32]), curve.N)
 
-	fmt.Println(hex.EncodeToString(r_inv.Bytes()))
 	G.Curve = curve
 	G.X = curve.Gx
 	G.Y = curve.Gy
